@@ -2,6 +2,12 @@ import Statistics.LinearRegression
 import qualified Data.Vector.Unboxed as U
 
 main = do
-    let xs = U.fromList [1..100000]
+    mapM_ test [1..10]
+    
+test k = do  
+    let n = 10000000
+    let a = k*n + 1
+    let b = (k+1)*n
+    let xs = U.fromList [a..b]
     let ys = U.map (\x -> x*100 + 2000) xs
-    putStrLn . show $ simpleLinReg xs ys
+    putStrLn . show $ linearRegression xs ys
