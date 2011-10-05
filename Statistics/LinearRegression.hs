@@ -1,6 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 
-module Statistics.LinearRegression (linearRegression, correl, covar) where
+module Statistics.LinearRegression (linearRegressionRSqr, linearRegression, correl, covar) where
 
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Sample as S

@@ -7,16 +7,20 @@ Name:                statistics-linreg
 -- The package version. See the Haskell package versioning policy
 -- (http://www.haskell.org/haskellwiki/Package_versioning_policy) for
 -- standards guiding when and how versions should be incremented.
-Version:             0.2
+Version:             0.2.1
 
 -- A short (one-line) description of the package.
 Synopsis:            Linear regression between two samples, based on the 'statistics' package
 
 -- A longer description of the package.
 Description:         Provides a function to perform a linear regression between 2 samples, see the documentation of the linearRegression function. This library is based on the 'statistics' package.
+		     .
+		     0.2.*: added the r-squared version and improved the performances
 
 -- URL for the project homepage or repository.
 Homepage:            http://github.com/alpmestan/statistics-linreg
+Bug-reports:         https://github.com/alpmestan/statistics-linreg/issues
+
 -- The license under which the package is released.
 License:             MIT
 
@@ -31,7 +35,7 @@ Author:              Alp Mestanogullari <alpmestan@gmail.com>
 Maintainer:          Alp Mestanogullari <alpmestan@gmail.com>
 
 -- A copyright notice.
-Copyright:           2010 Alp Mestanogullari
+Copyright:           2010-2011 Alp Mestanogullari
 
 -- Stability of the pakcage (experimental, provisional, stable...)
 Stability:           Experimental
@@ -45,7 +49,7 @@ Build-type:          Simple
 -- Extra-source-files:  
 
 -- Constraint on the version of Cabal needed to build this package.
-Cabal-version:       >=1.4
+Cabal-version:       >=1.6
 
 
 Library
@@ -55,10 +59,13 @@ Library
   -- Packages needed in order to build this package.
   Build-depends: statistics >= 0.5, vector >= 0.5, base >= 4 && < 5
 
-  Ghc-options: -O -funbox-strict-fields  
+  Ghc-options: -funbox-strict-fields  
   -- Modules not exported by this package.
   -- Other-modules:       
   
   -- Extra tools (e.g. alex, hsc2hs, ...) needed to build the source.
   -- Build-tools:         
   
+source-repository head
+  type: git
+  location: http://github.com/alpmestan/statistics-linreg.git
