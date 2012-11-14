@@ -9,13 +9,11 @@ import qualified Statistics.Sample as S
 
 -- | Covariance of two samples
 covar :: S.Sample -> S.Sample -> Double
-covar xs ys = U.sum (U.zipWith (*) (U.map f1 xs) (U.map f2 ys)) / (n-1)
+covar xs ys = U.sum (U.zipWith (*) (U.map (subtract m1) xs) (U.map (subtract m2) ys)) / (n-1)
     where
           !n = fromIntegral $ U.length xs
           !m1 = S.mean xs
           !m2 = S.mean ys
-          f1 = \x -> (x - m1)
-          f2 = \x -> (x - m2)
 {-# INLINE covar #-}
 
 
@@ -35,7 +33,7 @@ correl xs ys = let !c = covar xs ys
 linearRegressionRSqr :: S.Sample -> S.Sample -> (Double, Double, Double)
 linearRegressionRSqr xs ys = (alpha, beta, r*r)
     where 
-          !c                   = U.sum (U.zipWith (*) (U.map (subtract m1) xs) (U.map (subtract m2) ys)) / (n-1)
+          !c                   = covar xs ys
           !r                   = c / (sx * sy)
           !m1                  = S.mean xs 
           !m2                  = S.mean ys
