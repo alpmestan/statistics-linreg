@@ -52,13 +52,5 @@ linearRegressionRSqr xs ys = (alpha, beta, r*r)
 linearRegression :: S.Sample -> S.Sample -> (Double, Double)
 linearRegression xs ys = (alpha, beta)
     where 
-          !c                   = U.sum (U.zipWith (*) (U.map (subtract m1) xs) (U.map (subtract m2) ys)) / (n-1)
-          !r                   = c / (sx * sy)
-          !m1                  = S.mean xs 
-          !m2                  = S.mean ys
-          !sx                  = S.stdDev xs
-          !sy                  = S.stdDev ys
-          !n                   = fromIntegral $ U.length xs
-          !beta                = r * sy / sx
-          !alpha               = m2 - beta * m1
+        (alpha, beta, _) = linearRegressionRSqr xs ys
 {-# INLINE linearRegression #-}
