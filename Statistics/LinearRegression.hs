@@ -52,29 +52,24 @@ linearRegressionRSqr xs ys = (alpha, beta, r*r)
           
 -- | Simple linear regression between 2 samples.
 --   Takes two vectors Y={yi} and X={xi} and returns
---   (alpha, beta, r*r) such that Y = alpha + beta*X          
+--   (alpha, beta) such that Y = alpha + beta*X          
 linearRegression :: S.Sample -> S.Sample -> (Double, Double)
 linearRegression xs ys = (alpha, beta)
     where 
         (alpha, beta, _) = linearRegressionRSqr xs ys
 {-# INLINE linearRegression #-}
 
--- | Total Least Squares (TLS) linear regression assumes x-axis values are also random variables (as opposed to simple linear regression that assumes no errors in the x values).
--- It does assume the distribution of the x values is the same as that of the y values (a.k.a. same error bars/standard deviations).
+-- | Total Least Squares (TLS) linear regression.
+-- Assumes x-axis values (and not just y-axis values) are random variables and that both variables have similar distributions.
 -- interface is the same as linearRegression.
-linearRegressionTLS :: S.Sample -> S.Sample -> (Double, Double, Double,Double)
-linearRegressionTLS xs ys = (alpha1, beta1,alpha2, beta2)
+linearRegressionTLS :: S.Sample -> S.Sample -> (Double,Double)
+linearRegressionTLS xs ys = (alpha, beta)
     where
           !alpha               = m2 - beta * m1
-          !beta                = max (-b - sqrt( b^2-4*a*c)) (-b + sqrt( b^2-4*a*c)) /2*a
-          !a                   = covar xs ys
-          !b                   = S.variance xs - (S.variance ys)
-          !c                   = - covar xs ys
+          !betas               = [(-b - sqrt(b^2+4))/2,(-b + sqrt(b^2+4)) /2]
+          !c                   = covar xs ys
+          !b                   = S.variance xs - (S.variance ys) / c
           !m1                  = S.mean xs 
           !m2                  = S.mean ys
-          !r                   = (S.variance xs - (S.variance ys)) / (covar xs ys)
-          !alpha1               = m2 - beta1 * m1
-          !alpha2               = m2 - beta2 * m1
-          !beta1                = (-r + sqrt (r^2 + 4)) / 2
-          !beta2                = (-r - sqrt (r^2 + 4)) / 2
+          !beta                = if c > 0 then maximum betas else minimum betas
 {-# INLINE linearRegressionTLS #-}
