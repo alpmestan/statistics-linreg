@@ -7,14 +7,15 @@ Name:                statistics-linreg
 -- The package version. See the Haskell package versioning policy
 -- (http://www.haskell.org/haskellwiki/Package_versioning_policy) for
 -- standards guiding when and how versions should be incremented.
-Version:             0.2.1
+Version:             0.3.0
 
 -- A short (one-line) description of the package.
 Synopsis:            Linear regression between two samples, based on the 'statistics' package
 
 -- A longer description of the package.
-Description:         Provides a function to perform a linear regression between 2 samples, see the documentation of the linearRegression function. This library is based on the 'statistics' package.
+Description:         Provides functions to perform a linear regression between 2 samples, see the documentation of the linearRegression functions. This library is based on the 'statistics' package.
 		     .
+		     0.3.*: added the Total-Least-Squares version and made some refactoring to eliminate code duplication
 		     0.2.*: added the r-squared version and improved the performances
 
 -- URL for the project homepage or repository.
