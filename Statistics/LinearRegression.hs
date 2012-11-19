@@ -65,11 +65,11 @@ linearRegression xs ys = (alpha, beta)
 linearRegressionTLS :: S.Sample -> S.Sample -> (Double,Double)
 linearRegressionTLS xs ys = (alpha, beta)
     where
-          !alpha               = m2 - beta * m1
-          !betas               = [(-b - sqrt(b^2+4))/2,(-b + sqrt(b^2+4)) /2]
           !c                   = covar xs ys
           !b                   = (S.variance xs - (S.variance ys)) / c
           !m1                  = S.mean xs 
           !m2                  = S.mean ys
+          !betas               = [(-b - sqrt(b^2+4))/2,(-b + sqrt(b^2+4)) /2]
           !beta                = if c > 0 then maximum betas else minimum betas
+          !alpha               = m2 - beta * m1
 {-# INLINE linearRegressionTLS #-}
