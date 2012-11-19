@@ -11,7 +11,8 @@ Description:         Provides functions to perform a linear regression between 2
                      .
                      > import qualified Data.Vector.Unboxed as U
                      > 
-                     > main = do
+                     > test :: Int -> IO ()
+                     > test k = do
                      >   let n = 10000000
                      >   let a = k*n + 1
                      >   let b = (k+1)*n
