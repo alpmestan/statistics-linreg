@@ -1,11 +1,11 @@
 {-# LANGUAGE BangPatterns #-}
 
 module Statistics.LinearRegression (
-    linearRegressionRSqr,
     linearRegression,
+    linearRegressionRSqr,
+    linearRegressionTLS,
     correl,
     covar,
-    linearRegressionTLS
     ) where
 
 import qualified Data.Vector.Unboxed as U
