@@ -66,7 +66,7 @@ linearRegressionTLS :: S.Sample -> S.Sample -> (Double,Double)
 linearRegressionTLS xs ys = (alpha, beta)
     where
           !c                   = covar xs ys
-          !b                   = (S.variance xs - (S.variance ys)) / c
+          !b                   = (S.varianceUnbiased xs - (S.varianceUnbiased ys)) / c
           !m1                  = S.mean xs 
           !m2                  = S.mean ys
           !betas               = [(-b - sqrt(b^2+4))/2,(-b + sqrt(b^2+4)) /2]
