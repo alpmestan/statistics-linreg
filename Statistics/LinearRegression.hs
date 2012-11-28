@@ -15,12 +15,18 @@ import qualified Statistics.Sample as S
 
 -- | Covariance of two samples
 covar :: S.Sample -> S.Sample -> Double
-covar xs ys = U.sum (U.zipWith (*) (U.map (subtract m1) xs) (U.map (subtract m2) ys)) / (n-1)
+covar xs ys = covar' m1 m2 n xs ys
     where
           !n = fromIntegral $ U.length xs
           !m1 = S.mean xs
           !m2 = S.mean ys
 {-# INLINE covar #-}
+
+-- internal function that avoids duplicate calculation of means and lengths where possible
+-- Note: trying to make the calculation even more efficient by subtracting m1*m1*n instead of individual subtractions increased errors resulting from rounding issues.
+covar' :: Double -> Double -> Double -> S.Sample -> S.Sample -> Double
+covar' m1 m2 n xs ys = U.sum (U.zipWith (*) (U.map (subtract m1) xs) (U.map (subtract m2) ys)) / (n-1)
+{-# INLINE covar' #-}
 
 
 -- | Pearson's product-moment correlation coefficient
@@ -37,16 +43,14 @@ correl xs ys = let !c = covar xs ys
 --   and where r is the Pearson product-moment correlation
 --   coefficient
 linearRegressionRSqr :: S.Sample -> S.Sample -> (Double, Double, Double)
-linearRegressionRSqr xs ys = (alpha, beta, r*r)
+linearRegressionRSqr xs ys = (alpha, beta, r2)
     where 
-          !c                   = covar xs ys
-          !r                   = c / (sx * sy)
-          !m1                  = S.mean xs 
-          !m2                  = S.mean ys
-          !sx                  = S.stdDev xs
-          !sy                  = S.stdDev ys
+          !c                   = covar' m1 m2 n xs ys
+          !r2                  = c*c / (v1*v2)
+          !(m1,v1)             = S.meanVarianceUnb xs 
+          !(m2,v2)             = S.meanVarianceUnb ys
           !n                   = fromIntegral $ U.length xs
-          !beta                = r * sy / sx
+          !beta                = c / v1
           !alpha               = m2 - beta * m1
 {-# INLINE linearRegressionRSqr #-}
           
@@ -65,10 +69,11 @@ linearRegression xs ys = (alpha, beta)
 linearRegressionTLS :: S.Sample -> S.Sample -> (Double,Double)
 linearRegressionTLS xs ys = (alpha, beta)
     where
-          !c                   = covar xs ys
-          !b                   = (S.varianceUnbiased xs - (S.varianceUnbiased ys)) / c
-          !m1                  = S.mean xs 
-          !m2                  = S.mean ys
+          !c                   = covar' m1 m2 n xs ys
+          !b                   = (v1 - v2) / c
+          !(m1,v1)             = S.meanVarianceUnb xs 
+          !(m2,v2)             = S.meanVarianceUnb ys
+          !n                   = fromIntegral $ U.length xs
           !betas               = [(-b - sqrt(b^2+4))/2,(-b + sqrt(b^2+4)) /2]
           !beta                = if c > 0 then maximum betas else minimum betas
           !alpha               = m2 - beta * m1
