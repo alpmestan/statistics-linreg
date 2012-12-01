@@ -9,7 +9,11 @@ module Statistics.LinearRegression (
     ) where
 
 import qualified Data.Vector.Unboxed as U
+import Data.Vector.Unboxed ((!))
+import Safe (at)
 import qualified Statistics.Sample as S
+import qualified Statistics.Function as SF
+import Data.Function (on)
 
 --- * Simple linear regression
 
@@ -78,3 +82,24 @@ linearRegressionTLS xs ys = (alpha, beta)
           !beta                = if c > 0 then maximum betas else minimum betas
           !alpha               = m2 - beta * m1
 {-# INLINE linearRegressionTLS #-}
+
+---- Robust regression based on "Computing LTS regression for large data sets" by Rousseeuw and Van Driessen.
+---- The methods implemented allow using the same scheme both for Least squares (where the errors are only along the vertical axis) and for total least squares, where errors are assumed on both variables.
+
+---- first some helper functions that could probably be made more efficient:
+
+-- get a sub-sample based on indices.
+subSample :: [Int] -> S.Sample -> S.Sample
+subSample indices original = U.generate (length indices) ((original `U.unsafeIndex`) . (indices `at`))
+
+-- some type definitions to make things clear.
+type EstimatedParams = (Double,Double)
+type ErrorFunction = (EstimatedParams -> (Double,Double) -> Double)
+type Estimator = (S.Sample -> S.Sample -> EstimatedParams)
+data EstimationParameters = EstimationParameters { outlierFraction :: Double, estimator :: Estimator,errorFunction :: ErrorFunction }
+
+converganceIteration :: EstimationParameters -> EstimatedParams -> S.Sample -> S.Sample -> EstimatedParams
+converganceIteration ep params xs ys = estimator ep good_xs good_ys
+    where
+        (good_xs,good_ys) = U.unzip . U.take good_set_size . SF.sortBy (compare `on` (errorFunction ep params)) . U.zip xs $ ys
+        good_set_size = round $ (1-(outlierFraction ep)) * (fromIntegral . U.length $ xs)
