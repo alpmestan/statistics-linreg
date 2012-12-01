@@ -83,7 +83,7 @@ linearRegressionTLS xs ys = (alpha, beta)
           !alpha               = m2 - beta * m1
 {-# INLINE linearRegressionTLS #-}
 
----- Robust regression based on "Computing LTS regression for large data sets" by Rousseeuw and Van Driessen.
+---- Robust regression based on "Computing LTS regression for large data sets" by Rousseeuw and Van Driessen 1999.
 ---- The methods implemented allow using the same scheme both for Least squares (where the errors are only along the vertical axis) and for total least squares, where errors are assumed on both variables.
 
 ---- first some helper functions that could probably be made more efficient:
@@ -98,8 +98,22 @@ type ErrorFunction = (EstimatedParams -> (Double,Double) -> Double)
 type Estimator = (S.Sample -> S.Sample -> EstimatedParams)
 data EstimationParameters = EstimationParameters { outlierFraction :: Double, estimator :: Estimator,errorFunction :: ErrorFunction }
 
-converganceIteration :: EstimationParameters -> EstimatedParams -> S.Sample -> S.Sample -> EstimatedParams
-converganceIteration ep params xs ys = estimator ep good_xs good_ys
+-- calculate the size of an expected set with no outliers.
+setSize :: EstimationParameters -> S.Sample -> Int
+setSize ep xs = round $ (1-(outlierFraction ep)) * (fromIntegral . U.length $ xs)
+
+-- Given an initial estimate of the regression parameters - perform a "convergence" iteration giving at least as good an estimation as the previous one.
+convergenceIteration :: EstimationParameters -> EstimatedParams -> S.Sample -> S.Sample -> EstimatedParams
+convergenceIteration ep params xs ys = estimator ep good_xs good_ys
     where
-        (good_xs,good_ys) = U.unzip . U.take good_set_size . SF.sortBy (compare `on` (errorFunction ep params)) . U.zip xs $ ys
-        good_set_size = round $ (1-(outlierFraction ep)) * (fromIntegral . U.length $ xs)
+        (good_xs,good_ys) = U.unzip good_sample
+        set_size = setSize ep xs
+        good_sample = U.take set_size . SF.sortBy (compare `on` (errorFunction ep params)) . U.zip xs $ ys
+
+-- Given an estimate of the regression parameters, calculate the "quality" of the estimate by trimming the expected outliers group and summing over the errors of the remaining samples.
+estimationQuality :: EstimationParameters -> EstimatedParams -> S.Sample -> S.Sample -> Double
+estimationQuality ep params xs ys = U.sum . U.take set_size . SF.sort $ errors
+    where
+        errors = U.map (errorFunction ep params) . U.zip xs $ ys
+        set_size = setSize ep xs
+
