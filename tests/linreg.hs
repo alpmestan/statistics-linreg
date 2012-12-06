@@ -37,8 +37,8 @@ test_convergence = do
     putStrLn . show $ converge ep xs ys iter1
 
 getNormals :: Double -> Double -> Int -> IO [Double]
-getNormals mean var n = do
-    withSystemRandom . asGenIO $ \gen -> replicateM n (normal mean var gen)
+getNormals mean std n = do
+    withSystemRandom . asGenIO $ \gen -> replicateM n (normal mean std gen)
         
 testFigure :: U.Vector Double -> U.Vector Double -> (EstimatedParams, EstimatedParams, EstimatedParams) -> Figure ()
 testFigure xs ys (simple, non_robust, robust) = do
