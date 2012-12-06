@@ -1,7 +1,9 @@
 Name:                statistics-linreg
-Version:             0.2.2
+Version:             0.2.3
 Synopsis:            Linear regression between two samples, based on the 'statistics' package.
 Description:         Provides functions to perform a linear regression between 2 samples, see the documentation of the linearRegression functions. This library is based on the 'statistics' package.
+		     .
+		       * 0.2.3: added robust-fit support.
 		     .
 		       * 0.2.2: added the Total-Least-Squares version and made some refactoring to eliminate code duplication
 		     .
@@ -27,7 +29,7 @@ Homepage:            http://github.com/alpmestan/statistics-linreg
 Bug-reports:         https://github.com/alpmestan/statistics-linreg/issues
 License:             MIT
 License-file:        LICENSE
-Author:              Alp Mestanogullari <alpmestan@gmail.com>, Uri Barenholz
+Author:              Alp Mestanogullari <alpmestan@gmail.com>, Uri Barenholz <uri.barenholz@weizmann.ac.il>
 Maintainer:          Alp Mestanogullari <alpmestan@gmail.com>
 Copyright:           2010-2012 Alp Mestanogullari
 Stability:           Experimental
