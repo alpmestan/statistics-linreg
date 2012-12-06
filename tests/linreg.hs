@@ -10,7 +10,7 @@ import qualified Data.Packed.Vector as V
 import Graphics.Rendering.Plot
 
 main = do
---    mapM_ test [1..10]
+    mapM_ test [1..10]
     test_convergence
     test_robust
 
@@ -66,22 +66,24 @@ testFigure xs ys (simple, non_robust, robust) = do
         
 test_robust = do
     putStrLn "generating random dataset for robust fit:"
-    first_xs <- getNormals 0.0 10.0 8000
-    first_ys_errs <- getNormals  0.0 1.0 8000
+    first_xs <- getNormals 0.0 10.0 800
+    first_ys_errs <- getNormals  0.0 1.0 800
     let first_ys = zipWith (+) first_xs first_ys_errs
-    last_xs <- liftM (map (50+)) $ getNormals  0.0 (sqrt 50) 2000
-    last_ys <- getNormals  0.0 (sqrt 50) 2000
+    last_xs <- getNormals  50.0 (sqrt 50) 200
+    last_ys <- getNormals  0.0 (sqrt 50) 200
     let xs = U.fromList $ first_xs ++ last_xs
     let ys = U.fromList $ first_ys ++ last_ys
-    putStrLn "robustFit test:"
+    putStrLn "robustFit test results:"
     (simple,non_robust,robust) <- evalRandIO (randTest xs ys)
-    putStrLn "linearRegression:"
+    putStrLn "linearRegression on dataset:"
     putStrLn . show $ simple
-    putStrLn "convergedRegression:"
+    putStrLn "convergedRegression on dataset:"
     putStrLn . show $ non_robust
-    putStrLn "robustFit:"
+    putStrLn "robustFit on dataset:"
     putStrLn . show $ robust
-    writeFigure PNG ("test.png") (800,800) $ testFigure xs ys (simple,non_robust,robust)
+    let filename = "test_robust.png"
+    putStrLn $ "Image output is at " ++ filename
+    writeFigure PNG filename (800,800) $ testFigure xs ys (simple,non_robust,robust)
 
 randTest :: MonadRandom m => U.Vector Double -> U.Vector Double -> m (EstimatedParams,EstimatedParams,EstimatedParams)
 randTest xs ys = do
