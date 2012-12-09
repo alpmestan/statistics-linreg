@@ -10,6 +10,7 @@ module Statistics.LinearRegression (
     covar,
     -- * Robust linear regression
     robustFit,
+    robustFitRSqr,
     -- ** Related types
     EstimationParameters(..),
     ErrorFunction,
@@ -221,6 +222,13 @@ robustFit ep xs ys = do
                         else do
                             (nxs,nys) <- liftM unzip $ randomSubset (zip (U.toList xs) (U.toList ys)) (largeSetSize ep)
                             largeGroupFitCandidates ep (U.fromList nxs) (U.fromList nys)
+
+-- | Robust fit yielding also the R-square value of the \"clean\" dataset.
+robustFitRSqr :: MonadRandom m => EstimationParameters -> S.Sample -> S.Sample -> m (EstimatedRelation,Double)
+robustFitRSqr ep xs ys = do
+    er <- robustFit ep xs ys
+    let (good_xs,good_ys) = U.unzip . U.take (setSize ep xs) . SF.sortBy (compare `on` errorFunction ep er) $ U.zip xs ys
+    return (er,correl good_xs good_ys ^ 2)
 
 -- | Given a set of initial estimates converge them all and find the optimal one.
 candidatesToWinner :: EstimationParameters -> S.Sample -> S.Sample -> [EstimatedRelation] -> EstimatedRelation
