@@ -123,17 +123,17 @@ type ErrorFunction = (EstimatedRelation -> (Double,Double) -> Double)
 -- | The robust fit algorithm used has various parameters that can be specified using the 'EstimationParameters' record.
 data EstimationParameters = EstimationParameters {
     -- | Maximal fraction of outliers expected in the sample (default 0.25)
-    outlierFraction     :: Double,
+    outlierFraction     :: !Double,
     -- | Number of concentration steps to take for initial evaluation of a solution (default 3)
-    shortIterationSteps :: Int,
+    shortIterationSteps :: !Int,
     -- | Maximal number of sampled subsets (pairs of points) to use as starting points (default 500)
-    maxSubsetsNum       :: Int,
+    maxSubsetsNum       :: !Int,
     -- | If the initial sample is large, and thus gets subdivided, this is the number of candidate-estimations to take from each subgroup, on which complete convergence will be executed (default 10)
-    groupSubsets        :: Int,
+    groupSubsets        :: !Int,
     -- | Maximal size of sample that can be analyzed without any sub-division (default 600)
-    mediumSetSize       :: Int,
+    mediumSetSize       :: !Int,
     -- | Maximal size of sample that does not require two-step sub-division (see reference article) (default 1500)
-    largeSetSize        :: Int,
+    largeSetSize        :: !Int,
     -- | Estimator function to use (default linearRegression)
     estimator           :: Estimator,
     -- | ErrorFunction to use (default linearRegressionError)
