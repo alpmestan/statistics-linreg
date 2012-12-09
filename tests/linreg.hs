@@ -40,7 +40,7 @@ getNormals :: Double -> Double -> Int -> IO [Double]
 getNormals mean std n = do
     withSystemRandom . asGenIO $ \gen -> replicateM n (normal mean std gen)
         
-testFigure :: U.Vector Double -> U.Vector Double -> (EstimatedParams, EstimatedParams, EstimatedParams) -> Figure ()
+testFigure :: U.Vector Double -> U.Vector Double -> (EstimatedRelation, EstimatedRelation, EstimatedRelation) -> Figure ()
 testFigure xs ys (simple, non_robust, robust) = do
     let vxs = V.fromList . U.toList $ xs
     let vys = V.fromList . U.toList $ ys
@@ -85,7 +85,7 @@ test_robust = do
     putStrLn $ "Image output is at " ++ filename
     writeFigure PNG filename (800,800) $ testFigure xs ys (simple,non_robust,robust)
 
-randTest :: MonadRandom m => U.Vector Double -> U.Vector Double -> m (EstimatedParams,EstimatedParams,EstimatedParams)
+randTest :: MonadRandom m => U.Vector Double -> U.Vector Double -> m (EstimatedRelation,EstimatedRelation,EstimatedRelation)
 randTest xs ys = do
     robust <- robustFit defaultEstimationParameters xs ys
     let simple = linearRegression xs ys
