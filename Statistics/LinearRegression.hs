@@ -106,10 +106,6 @@ linearRegressionTLS xs ys = (alpha, beta)
           !alpha               = m2 - beta * m1
 {-# INLINE linearRegressionTLS #-}
 
----- Robust regression based on "Computing LTS regression for large data sets" by Rousseeuw and Van Driessen 1999.
----- The methods implemented allow using the same scheme both for Least squares (where the errors are only along the vertical axis) and for total least squares, where errors are assumed on both variables.
----- The user can also supply his/her own error and regression functions.
-
 -- | An estimated linear relation between 2 samples is (alpha,beta) such that Y = alpha + beta*X.
 type EstimatedRelation = (Double,Double)
 
