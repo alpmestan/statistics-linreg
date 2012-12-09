@@ -1,0 +1,5 @@
+- make the code use "strict pair, strict triplet" kind of structures with unpacking, for better memory perf (and thus maybe improve runtime too, letting the runtime use the registers more)
+- make a more comprehensive test suite and:
+  . check the memory profiles to see if something can be improved
+  . check the %GC time
+  . profile time perf and see if everything's sound
