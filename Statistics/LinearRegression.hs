@@ -10,6 +10,7 @@ module Statistics.LinearRegression (
     covar,
     -- * Robust linear regression
     robustFit,
+    nonRandomRobustFit,
     robustFitRSqr,
     -- ** Related types
     EstimationParameters(..),
@@ -32,6 +33,7 @@ import Safe (at)
 import System.Random
 import System.Random.Shuffle (shuffleM)
 import Control.Monad.Random.Class
+import Control.Monad.Random (evalRand)
 import Control.Monad (liftM)
 import Data.Function (on)
 import Data.List (minimumBy, sortBy)
@@ -225,6 +227,10 @@ robustFitRSqr ep xs ys = do
     er <- robustFit ep xs ys
     let (good_xs,good_ys) = U.unzip . U.take (setSize ep xs) . SF.sortBy (compare `on` errorFunction ep er) $ U.zip xs ys
     return (er,correl good_xs good_ys ^ 2)
+
+-- | A wrapper that executes 'robustFit' using a default random generator (meaning it is only pseudo-random)
+nonRandomRobustFit :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation
+nonRandomRobustFit ep xs ys = evalRand (robustFit ep xs ys) (mkStdGen 1)
 
 -- | Given a set of initial estimates converge them all and find the optimal one.
 candidatesToWinner :: EstimationParameters -> S.Sample -> S.Sample -> [EstimatedRelation] -> EstimatedRelation
