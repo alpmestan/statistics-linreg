@@ -185,7 +185,7 @@ concentrationStep ep xs ys (prev, prev_err) = (new_estimate, new_err)
 
 -- | Infinite set of consecutive concentration steps.
 concentration :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation -> [(EstimatedRelation, Double)]
-concentration ep xs ys params = iterate (concentrationStep ep xs ys) (params,-1)
+concentration ep xs ys params = tail $ iterate (concentrationStep ep xs ys) (params,-1)
 
 -- | Calculate the optimal (local minimum) estimate based on an initial estimate.
 -- The local minimum may not be the global (a.k.a. best) estimate but starting from enough different initial estimates should yield the global optimum eventually.
@@ -193,9 +193,9 @@ converge :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation ->
 converge ep xs ys = fst . findConvergencePoint . concentration ep xs ys
 
 -- | The convergence point is defined as the point the error estimate of which is equal to the next estimate's error.
-findConvergencePoint :: Eq a => [(b,a)] -> (b,a)
+findConvergencePoint :: Ord a => [(b,a)] -> (b,a)
 findConvergencePoint (x:y:ys)
-    | snd x == snd y = x
+    | snd x <= snd y = x -- rounding issues my cause an actual increase in error resulting in an infinite loop so the actual stop condition is when the errors stop decreasing
     | otherwise = findConvergencePoint (y:ys)
 findConvergencePoint xs = error "Too short a list for conversion (size < 2)"
 
