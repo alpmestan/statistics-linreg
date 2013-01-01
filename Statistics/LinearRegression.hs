@@ -166,7 +166,9 @@ linearRegressionTLSError (alpha,beta) (x,y) = ey/(1+beta^2)
 
 -- | Helper function to calculate the minimal expected size of uncontaminated data based on the maximal fraction of outliers.
 setSize :: EstimationParameters -> S.Sample -> Int
-setSize ep xs = round $ (1-outlierFraction ep) * (fromIntegral . U.length $ xs)
+setSize ep xs = max (n `div` 2 + 1) . round $ (1-outlierFraction ep) * (fromIntegral n)
+    where
+        n = U.length xs
 
 -- | Helper function that, given an initial estimated relation and the error of the perivous estimation, performs a "concentration" step, generating a new estimate based on a fraction of points laying closest to the previous estimate and estimates the error of the previous estimate based on the same fraction.
 -- The result is an estimate that is at least as good as the previous one.
