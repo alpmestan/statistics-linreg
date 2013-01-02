@@ -39,7 +39,6 @@ import Data.Function (on)
 import Data.List (minimumBy, sortBy)
 import Data.Maybe (fromMaybe)
 import qualified Statistics.Sample as S
-import qualified Statistics.Function as SF
 
 --- * Simple linear regression
 
@@ -177,11 +176,11 @@ concentrationStep :: EstimationParameters -> S.Sample -> S.Sample -> (EstimatedR
 concentrationStep ep xs ys (prev, prev_err) = (new_estimate, new_err)
     where
         set_size = setSize ep xs
-        xyerrors = U.map (\p -> (p,errorFunction ep prev p)) $ U.zip xs ys
-        (xys,errors) = U.unzip . U.take set_size . SF.sortBy (compare `on` snd) $ xyerrors
-        (good_xs,good_ys) = U.unzip xys
-        new_estimate = estimator ep good_xs good_ys
-        new_err = U.sum errors
+        xyerrors = map (\p -> (p,errorFunction ep prev p)) $ zip (U.toList xs) (U.toList ys)
+        (xys,errors) = unzip . take set_size . sortBy (compare `on` snd) $ xyerrors
+        (good_xs,good_ys) = unzip xys
+        new_estimate = estimator ep (U.fromList good_xs) (U.fromList good_ys)
+        new_err = sum errors
 
 -- | Infinite set of consecutive concentration steps.
 concentration :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation -> [(EstimatedRelation, Double)]
@@ -227,7 +226,7 @@ robustFit ep xs ys = do
 robustFitRSqr :: MonadRandom m => EstimationParameters -> S.Sample -> S.Sample -> m (EstimatedRelation,Double)
 robustFitRSqr ep xs ys = do
     er <- robustFit ep xs ys
-    let (good_xs,good_ys) = U.unzip . U.take (setSize ep xs) . SF.sortBy (compare `on` errorFunction ep er) $ U.zip xs ys
+    let (good_xs,good_ys) = U.unzip . U.fromList . take (setSize ep xs) . sortBy (compare `on` errorFunction ep er) . U.toList $ U.zip xs ys
     return (er,correl good_xs good_ys ^ 2)
 
 -- | A wrapper that executes 'robustFit' using a default random generator (meaning it is only pseudo-random)
