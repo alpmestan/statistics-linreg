@@ -50,11 +50,11 @@ testFigure xs ys (simple, non_robust, robust) = do
     setPlots 1 1
     withPlot (1,1) $ do
         addAxis XAxis (Side Lower) $ do
-            setTicks Minor (Left 5)
+            setTicks Minor (TickNumber 5)
             withAxisLine $ do
                 setLineWidth 1.0 
         addAxis YAxis (Side Lower) $ do
-            setTicks Minor (Left 5)
+            setTicks Minor (TickNumber 5)
             withAxisLine $ do
                 setLineWidth 1.0
         setDataset dataset

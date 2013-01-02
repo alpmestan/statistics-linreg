@@ -10,6 +10,7 @@ module Statistics.LinearRegression (
     covar,
     -- * Robust linear regression
     robustFit,
+    nonRandomRobustFit,
     robustFitRSqr,
     -- ** Related types
     EstimationParameters(..),
@@ -32,12 +33,12 @@ import Safe (at)
 import System.Random
 import System.Random.Shuffle (shuffleM)
 import Control.Monad.Random.Class
+import Control.Monad.Random (evalRand)
 import Control.Monad (liftM)
 import Data.Function (on)
 import Data.List (minimumBy, sortBy)
 import Data.Maybe (fromMaybe)
 import qualified Statistics.Sample as S
-import qualified Statistics.Function as SF
 
 --- * Simple linear regression
 
@@ -164,7 +165,9 @@ linearRegressionTLSError (alpha,beta) (x,y) = ey/(1+beta^2)
 
 -- | Helper function to calculate the minimal expected size of uncontaminated data based on the maximal fraction of outliers.
 setSize :: EstimationParameters -> S.Sample -> Int
-setSize ep xs = round $ (1-outlierFraction ep) * (fromIntegral . U.length $ xs)
+setSize ep xs = max (n `div` 2 + 1) . round $ (1-outlierFraction ep) * (fromIntegral n)
+    where
+        n = U.length xs
 
 -- | Helper function that, given an initial estimated relation and the error of the perivous estimation, performs a "concentration" step, generating a new estimate based on a fraction of points laying closest to the previous estimate and estimates the error of the previous estimate based on the same fraction.
 -- The result is an estimate that is at least as good as the previous one.
@@ -173,15 +176,15 @@ concentrationStep :: EstimationParameters -> S.Sample -> S.Sample -> (EstimatedR
 concentrationStep ep xs ys (prev, prev_err) = (new_estimate, new_err)
     where
         set_size = setSize ep xs
-        xyerrors = U.map (\p -> (p,errorFunction ep prev p)) $ U.zip xs ys
-        (xys,errors) = U.unzip . U.take set_size . SF.sortBy (compare `on` snd) $ xyerrors
-        (good_xs,good_ys) = U.unzip xys
-        new_estimate = estimator ep good_xs good_ys
-        new_err = U.sum errors
+        xyerrors = map (\p -> (p,errorFunction ep prev p)) $ zip (U.toList xs) (U.toList ys)
+        (xys,errors) = unzip . take set_size . sortBy (compare `on` snd) $ xyerrors
+        (good_xs,good_ys) = unzip xys
+        new_estimate = estimator ep (U.fromList good_xs) (U.fromList good_ys)
+        new_err = sum errors
 
 -- | Infinite set of consecutive concentration steps.
 concentration :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation -> [(EstimatedRelation, Double)]
-concentration ep xs ys params = iterate (concentrationStep ep xs ys) (params,-1)
+concentration ep xs ys params = tail $ iterate (concentrationStep ep xs ys) (params,-1)
 
 -- | Calculate the optimal (local minimum) estimate based on an initial estimate.
 -- The local minimum may not be the global (a.k.a. best) estimate but starting from enough different initial estimates should yield the global optimum eventually.
@@ -189,9 +192,9 @@ converge :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation ->
 converge ep xs ys = fst . findConvergencePoint . concentration ep xs ys
 
 -- | The convergence point is defined as the point the error estimate of which is equal to the next estimate's error.
-findConvergencePoint :: Eq a => [(b,a)] -> (b,a)
+findConvergencePoint :: Ord a => [(b,a)] -> (b,a)
 findConvergencePoint (x:y:ys)
-    | snd x == snd y = x
+    | snd x <= snd y = x -- rounding issues my cause an actual increase in error resulting in an infinite loop so the actual stop condition is when the errors stop decreasing
     | otherwise = findConvergencePoint (y:ys)
 findConvergencePoint xs = error "Too short a list for conversion (size < 2)"
 
@@ -223,8 +226,12 @@ robustFit ep xs ys = do
 robustFitRSqr :: MonadRandom m => EstimationParameters -> S.Sample -> S.Sample -> m (EstimatedRelation,Double)
 robustFitRSqr ep xs ys = do
     er <- robustFit ep xs ys
-    let (good_xs,good_ys) = U.unzip . U.take (setSize ep xs) . SF.sortBy (compare `on` errorFunction ep er) $ U.zip xs ys
+    let (good_xs,good_ys) = U.unzip . U.fromList . take (setSize ep xs) . sortBy (compare `on` errorFunction ep er) . U.toList $ U.zip xs ys
     return (er,correl good_xs good_ys ^ 2)
+
+-- | A wrapper that executes 'robustFit' using a default random generator (meaning it is only pseudo-random)
+nonRandomRobustFit :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation
+nonRandomRobustFit ep xs ys = evalRand (robustFit ep xs ys) (mkStdGen 1)
 
 -- | Given a set of initial estimates converge them all and find the optimal one.
 candidatesToWinner :: EstimationParameters -> S.Sample -> S.Sample -> [EstimatedRelation] -> EstimatedRelation
