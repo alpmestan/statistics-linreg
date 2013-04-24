@@ -13,6 +13,7 @@ main = do
     mapM_ test [1..10]
     test_convergence
     test_robust
+    test_variances
 
     
 test k = do  
@@ -91,3 +92,17 @@ randTest xs ys = do
     let simple = linearRegression xs ys
     let non_robust = converge defaultEstimationParameters xs ys (0.0,0.001) -- simple
     return (simple, non_robust, robust)
+
+test_variances :: IO ()
+test_variances = do
+    putStrLn "generating random dataset for variance test:"
+    let xs = U.fromList [-100..100]
+    offsets <- liftM U.fromList $ getNormals 0 10 (U.length xs)
+    let ys = U.zipWith (+) xs offsets
+    let ab = linearRegression xs ys
+    putStrLn $ "estimated fit should be (0,1). It is:" ++ show ab
+    let mse = linearRegressionMSE ab xs ys
+    putStrLn $ "Calculated MSE of sampled data should be an estimate of 10. it is:" ++ (show . sqrt $ mse)
+    let vs = linearRegressionVariances ab xs ys
+    putStrLn $ "Calculated variances of the linear fit are estimates of (0.5,1.4777e-4). They are:" ++ show vs
+    

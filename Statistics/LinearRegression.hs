@@ -98,7 +98,7 @@ linearRegression xs ys = (alpha, beta)
 --   This serves as an estimate for the variance of the sampled data.
 --   Accepts the regression parameters (alpha,beta) and the sample vectors X and Y.
 linearRegressionMSE :: (Double,Double) -> S.Sample -> S.Sample -> Double
-linearRegressionMSE (alpha,beta) xs ys = (U.sum $ U.zipWith (\x y -> (y - alpha -beta*x)^2) xs ys)/(n-2)
+linearRegressionMSE ab xs ys = (U.sum . U.map (linearRegressionError ab) . U.zip xs $ ys)/(n-2)
     where
         !n = fromIntegral $ U.length xs
 
