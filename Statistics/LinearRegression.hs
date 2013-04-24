@@ -5,9 +5,12 @@ module Statistics.LinearRegression (
     linearRegression,
     linearRegressionRSqr,
     linearRegressionTLS,
-    -- * related functions
+    -- * Related functions
     correl,
     covar,
+    -- * Estimated errors and distribution parameters
+    linearRegressionMSE,
+    linearRegressionVariances,
     -- * Robust linear regression
     robustFit,
     nonRandomRobustFit,
@@ -90,6 +93,27 @@ linearRegression xs ys = (alpha, beta)
     where 
         (alpha, beta, _) = linearRegressionRSqr xs ys
 {-# INLINE linearRegression #-}
+
+-- | The error (or residual) mean square of a sample w.r.t. an estimated regression line.
+--   This serves as an estimate for the variance of the sampled data.
+--   Accepts the regression parameters (alpha,beta) and the sample vectors X and Y.
+linearRegressionMSE :: (Double,Double) -> S.Sample -> S.Sample -> Double
+linearRegressionMSE (alpha,beta) xs ys = (U.sum $ U.zipWith (\x y -> (y - alpha -beta*x)^2) xs ys)/(n-2)
+    where
+        !n = fromIntegral $ U.length xs
+
+-- | The estimated variances of the regression parameters (alpha and beta) assuming normal, identical distributions of Y, the sampled data.
+-- These can serve to get confidence intervals for the regression parameters.
+-- Accepts the regression parameters (alpha,beta) and the sample vectors X and Y.
+linearRegressionVariances :: (Double,Double) -> S.Sample -> S.Sample -> (Double,Double)
+linearRegressionVariances (alpha,beta) xs ys = (va,vb)
+    where
+        !n = fromIntegral $ U.length xs
+        !mse = linearRegressionMSE (alpha,beta) xs ys
+        !vb = mse/(xv)
+        !mx = S.mean xs
+        !va = mse*(1/n+mx^2/xv)
+        !xv = U.sum . U.map (\x -> (x-mx)^2) $ xs
 
 -- | Total Least Squares (TLS) linear regression.
 -- Assumes x-axis values (and not just y-axis values) are random variables and that both variables have similar distributions.
@@ -291,4 +315,5 @@ applyTo f (x,y) = f x y
 -- * Two Dimensional Euclidean Regression (Stein) <http://www.dspcsp.com/pubs/euclreg.pdf>
 --
 -- * Computing LTS Regression For Large Data Sets (Rousseeuw and Driessen) <http://agoras.ua.ac.be/abstract/Comlts99.htm>
-
+--
+-- * Applied linear statistical models (Kutner et al.)
