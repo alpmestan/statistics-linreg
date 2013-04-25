@@ -10,7 +10,7 @@ module Statistics.LinearRegression (
     covar,
     -- * Estimated errors and distribution parameters
     linearRegressionMSE,
-    linearRegressionVariances,
+    linearRegressionDistributions,
     -- * Robust linear regression
     robustFit,
     nonRandomRobustFit,
@@ -42,6 +42,9 @@ import Data.Function (on)
 import Data.List (minimumBy, sortBy)
 import Data.Maybe (fromMaybe)
 import qualified Statistics.Sample as S
+import qualified Statistics.Distribution as D
+import qualified Statistics.Distribution.Transform as T
+import qualified Statistics.Distribution.StudentT as ST
 
 --- * Simple linear regression
 
@@ -102,11 +105,12 @@ linearRegressionMSE ab xs ys = (U.sum . U.map (linearRegressionError ab) . U.zip
     where
         !n = fromIntegral $ U.length xs
 
--- | The estimated variances of the regression parameters (alpha and beta) assuming normal, identical distributions of Y, the sampled data.
+-- | The estimated distributions of the regression parameters (alpha and beta) assuming normal, identical distributions of Y, the sampled data.
 -- These can serve to get confidence intervals for the regression parameters.
 -- Accepts the regression parameters (alpha,beta) and the sample vectors X and Y.
-linearRegressionVariances :: (Double,Double) -> S.Sample -> S.Sample -> (Double,Double)
-linearRegressionVariances (alpha,beta) xs ys = (va,vb)
+-- The distributions are StudnetT distributions centered at the estimated (alpha,beta) respectively, with parameter numbers n-2 (where n is the initial sample size) and with standard deviations that are extracted from the sampled data based on its MSE. See chapter 2 of reference [3] for details.
+linearRegressionDistributions :: (Double,Double) -> S.Sample -> S.Sample -> (T.LinearTransform ST.StudentT,T.LinearTransform ST.StudentT)
+linearRegressionDistributions (alpha,beta) xs ys = (ST.studentTUnstandardized (n-2) alpha (sqrt va),ST.studentTUnstandardized (n-2) beta (sqrt vb))
     where
         !n = fromIntegral $ U.length xs
         !mse = linearRegressionMSE (alpha,beta) xs ys
