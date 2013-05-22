@@ -104,5 +104,5 @@ test_variances = do
     let mse = linearRegressionMSE ab xs ys
     putStrLn $ "Calculated MSE of sampled data should be an estimate of 10. it is:" ++ (show . sqrt $ mse)
     let dsts = linearRegressionDistributions ab xs ys
-    putStrLn $ "Calculated distributions of the linear fit are linear transformed StudentT distributions with scalings that are estimates of (0.7071,1.2156e-2). They are:" ++ show dsts
+    putStrLn $ "Calculated distributions of the linear fit are linear transformed StudentT distributions with scalings that are estimates of (0.5,1.4777-4). They are:" ++ show dsts
     
