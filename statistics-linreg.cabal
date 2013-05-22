@@ -3,7 +3,7 @@ Version:             0.2.4
 Synopsis:            Linear regression between two samples, based on the 'statistics' package.
 Description:         Provides functions to perform a linear regression between 2 samples, see the documentation of the linearRegression functions. This library is based on the 'statistics' package.
 		     .
-		       * 0.2.4: added variance estimations for standard regression parameters.
+		       * 0.2.4: added distribution estimations for standard regression parameters.
 		     .
 		       * 0.2.3: added robust-fit support.
 		     .
