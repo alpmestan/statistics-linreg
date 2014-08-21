@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Statistics.LinearRegression (
     -- * Simple linear regression functions
@@ -30,8 +31,9 @@ module Statistics.LinearRegression (
     -- $references
     ) where
 
+import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
-import Data.Vector.Unboxed ((!))
+import Data.Vector.Generic (Vector, (!))
 import Safe (at)
 import System.Random
 import System.Random.Shuffle (shuffleM)
@@ -49,22 +51,22 @@ import qualified Statistics.Distribution.StudentT as ST
 --- * Simple linear regression
 
 -- | Covariance of two samples
-covar :: S.Sample -> S.Sample -> Double
+covar :: Vector v Double => v Double -> v Double -> Double
 covar xs ys = covar' m1 m2 n xs ys
     where
-          !n = fromIntegral $ U.length xs
+          !n = fromIntegral $ G.length xs
           !m1 = S.mean xs
           !m2 = S.mean ys
 {-# INLINE covar #-}
 
 -- internal function that avoids duplicate calculation of means and lengths where possible
 -- Note: trying to make the calculation even more efficient by subtracting m1*m1*n instead of individual subtractions increased errors, probably due to rounding issues.
-covar' :: Double -> Double -> Double -> S.Sample -> S.Sample -> Double
-covar' m1 m2 n xs ys = U.sum (U.zipWith (*) (U.map (subtract m1) xs) (U.map (subtract m2) ys)) / (n-1)
+covar' :: Vector v Double => Double -> Double -> Double -> v Double -> v Double -> Double
+covar' m1 m2 n xs ys = G.sum (G.zipWith (*) (G.map (subtract m1) xs) (G.map (subtract m2) ys)) / (n-1)
 {-# INLINE covar' #-}
 
 -- | Pearson's product-moment correlation coefficient
-correl :: S.Sample -> S.Sample -> Double
+correl :: Vector v Double => v Double -> v Double -> Double
 correl xs ys = let !c = covar xs ys
                    !sx = S.stdDev xs
                    !sy = S.stdDev ys
@@ -76,14 +78,14 @@ correl xs ys = let !c = covar xs ys
 --   (alpha, beta, r*r) such that Y = alpha + beta*X
 --   and where r is the Pearson product-moment correlation
 --   coefficient
-linearRegressionRSqr :: S.Sample -> S.Sample -> (Double, Double, Double)
+linearRegressionRSqr :: Vector v Double => v Double -> v Double -> (Double, Double, Double)
 linearRegressionRSqr xs ys = (alpha, beta, r2)
     where 
           !c                   = covar' m1 m2 n xs ys
           !r2                  = c*c / (v1*v2)
           !(m1,v1)             = S.meanVarianceUnb xs 
           !(m2,v2)             = S.meanVarianceUnb ys
-          !n                   = fromIntegral $ U.length xs
+          !n                   = fromIntegral $ G.length xs
           !beta                = c / v1
           !alpha               = m2 - beta * m1
 {-# INLINE linearRegressionRSqr #-}
@@ -91,7 +93,7 @@ linearRegressionRSqr xs ys = (alpha, beta, r2)
 -- | Simple linear regression between 2 samples.
 --   Takes two vectors Y={yi} and X={xi} and returns
 --   (alpha, beta) such that Y = alpha + beta*X          
-linearRegression :: S.Sample -> S.Sample -> (Double, Double)
+linearRegression :: Vector v Double => v Double -> v Double -> (Double, Double)
 linearRegression xs ys = (alpha, beta)
     where 
         (alpha, beta, _) = linearRegressionRSqr xs ys
@@ -100,36 +102,36 @@ linearRegression xs ys = (alpha, beta)
 -- | The error (or residual) mean square of a sample w.r.t. an estimated regression line.
 --   This serves as an estimate for the variance of the sampled data.
 --   Accepts the regression parameters (alpha,beta) and the sample vectors X and Y.
-linearRegressionMSE :: (Double,Double) -> S.Sample -> S.Sample -> Double
-linearRegressionMSE ab xs ys = (U.sum . U.map (linearRegressionError ab) . U.zip xs $ ys)/(n-2)
+linearRegressionMSE :: (Vector v Double, Vector v (Double, Double)) => (Double,Double) -> v Double -> v Double -> Double
+linearRegressionMSE ab xs ys = (G.sum . G.map (linearRegressionError ab) . G.zip xs $ ys)/(n-2)
     where
-        !n = fromIntegral $ U.length xs
+        !n = fromIntegral $ G.length xs
 
 -- | The estimated distributions of the regression parameters (alpha and beta) assuming normal, identical distributions of Y, the sampled data.
 -- These can serve to get confidence intervals for the regression parameters.
 -- Accepts the regression parameters (alpha,beta) and the sample vectors X and Y.
 -- The distributions are StudnetT distributions centered at the estimated (alpha,beta) respectively, with parameter numbers n-2 (where n is the initial sample size) and with standard deviations that are extracted from the sampled data based on its MSE. See chapter 2 of reference [3] for details.
-linearRegressionDistributions :: (Double,Double) -> S.Sample -> S.Sample -> (T.LinearTransform ST.StudentT,T.LinearTransform ST.StudentT)
+linearRegressionDistributions :: (Vector v Double, Vector v (Double, Double)) => (Double,Double) -> v Double -> v Double -> (T.LinearTransform ST.StudentT,T.LinearTransform ST.StudentT)
 linearRegressionDistributions (alpha,beta) xs ys = (ST.studentTUnstandardized (n-2) alpha va,ST.studentTUnstandardized (n-2) beta vb)
     where
-        !n = fromIntegral $ U.length xs
+        !n = fromIntegral $ G.length xs
         !mse = linearRegressionMSE (alpha,beta) xs ys
         !vb = mse/(xv)
         !mx = S.mean xs
         !va = mse*(1/n+mx^2/xv)
-        !xv = U.sum . U.map (\x -> (x-mx)^2) $ xs
+        !xv = G.sum . G.map (\x -> (x-mx)^2) $ xs
 
 -- | Total Least Squares (TLS) linear regression.
 -- Assumes x-axis values (and not just y-axis values) are random variables and that both variables have similar distributions.
 -- interface is the same as 'linearRegression'.
-linearRegressionTLS :: S.Sample -> S.Sample -> (Double,Double)
+linearRegressionTLS :: Vector v Double => v Double -> v Double -> (Double,Double)
 linearRegressionTLS xs ys = (alpha, beta)
     where
           !c                   = covar' m1 m2 n xs ys
           !b                   = (v1 - v2) / c
           !(m1,v1)             = S.meanVarianceUnb xs 
           !(m2,v2)             = S.meanVarianceUnb ys
-          !n                   = fromIntegral $ U.length xs
+          !n                   = fromIntegral $ G.length xs
           !betas               = [(-b - sqrt(b^2+4))/2,(-b + sqrt(b^2+4)) /2]
           !beta                = if c > 0 then maximum betas else minimum betas
           !alpha               = m2 - beta * m1
@@ -192,31 +194,31 @@ linearRegressionTLSError (alpha,beta) (x,y) = ey/(1+beta^2)
         ey = linearRegressionError (alpha,beta) (x,y)
 
 -- | Helper function to calculate the minimal expected size of uncontaminated data based on the maximal fraction of outliers.
-setSize :: EstimationParameters -> S.Sample -> Int
+setSize :: Vector v Double => EstimationParameters -> v Double -> Int
 setSize ep xs = max (n `div` 2 + 1) . round $ (1-outlierFraction ep) * (fromIntegral n)
     where
-        n = U.length xs
+        n = G.length xs
 
 -- | Helper function that, given an initial estimated relation and the error of the perivous estimation, performs a "concentration" step, generating a new estimate based on a fraction of points laying closest to the previous estimate and estimates the error of the previous estimate based on the same fraction.
 -- The result is an estimate that is at least as good as the previous one.
 -- The reason the error is calculated for the previous parameters is calculation optimization.
-concentrationStep :: EstimationParameters -> S.Sample -> S.Sample -> (EstimatedRelation, Double) -> (EstimatedRelation, Double)
+concentrationStep :: Vector v Double => EstimationParameters -> v Double -> v Double -> (EstimatedRelation, Double) -> (EstimatedRelation, Double)
 concentrationStep ep xs ys (prev, prev_err) = (new_estimate, new_err)
     where
         set_size = setSize ep xs
-        xyerrors = map (\p -> (p,errorFunction ep prev p)) $ zip (U.toList xs) (U.toList ys)
+        xyerrors = map (\p -> (p,errorFunction ep prev p)) $ zip (G.toList xs) (G.toList ys)
         (xys,errors) = unzip . take set_size . sortBy (compare `on` snd) $ xyerrors
         (good_xs,good_ys) = unzip xys
-        new_estimate = estimator ep (U.fromList good_xs) (U.fromList good_ys)
+        new_estimate = estimator ep (G.fromList good_xs) (G.fromList good_ys)
         new_err = sum errors
 
 -- | Infinite set of consecutive concentration steps.
-concentration :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation -> [(EstimatedRelation, Double)]
+concentration :: Vector v Double => EstimationParameters -> v Double -> v Double -> EstimatedRelation -> [(EstimatedRelation, Double)]
 concentration ep xs ys params = tail $ iterate (concentrationStep ep xs ys) (params,-1)
 
 -- | Calculate the optimal (local minimum) estimate based on an initial estimate.
 -- The local minimum may not be the global (a.k.a. best) estimate but starting from enough different initial estimates should yield the global optimum eventually.
-converge :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation -> EstimatedRelation
+converge :: Vector v Double => EstimationParameters -> v Double -> v Double -> EstimatedRelation -> EstimatedRelation
 converge ep xs ys = fst . findConvergencePoint . concentration ep xs ys
 
 -- | The convergence point is defined as the point the error estimate of which is equal to the next estimate's error.
@@ -227,19 +229,19 @@ findConvergencePoint (x:y:ys)
 findConvergencePoint xs = error "Too short a list for conversion (size < 2)"
 
 -- | Many times there is no need for full concentration as bad initial estimates can be discovered after only a few concentration steps.
-concentrateNSteps :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation -> (EstimatedRelation,Double)
+concentrateNSteps :: Vector v Double => EstimationParameters -> v Double -> v Double -> EstimatedRelation -> (EstimatedRelation,Double)
 concentrateNSteps ep xs ys params = concentration ep xs ys params !! shortIterationSteps ep
 
 -- | Finding a robust fit linear estimate between two samples. The procedure requires randomization and is based on the procedure described in the reference.
-robustFit :: MonadRandom m => EstimationParameters -> S.Sample -> S.Sample -> m EstimatedRelation
+robustFit :: (MonadRandom m, Vector v Double) => EstimationParameters -> v Double -> v Double -> m EstimatedRelation
 robustFit ep xs ys = do
-    let n = U.length xs
+    let n = G.length xs
 -- For optimal performance the exact procedure executed depends on the set size.
     if n < 2
         then
             error "cannot fit an input of size < 2"
         else if n == 2
-            then return $ lineParams ((U.head xs,U.head ys),(U.last xs,U.last ys))
+            then return $ lineParams ((G.head xs,G.head ys),(G.last xs,G.last ys))
             else 
                 liftM (candidatesToWinner ep xs ys) $ if n < mediumSetSize ep
                     then
@@ -247,41 +249,41 @@ robustFit ep xs ys = do
                     else if n < largeSetSize ep
                         then largeGroupFitCandidates ep xs ys
                         else do
-                            (nxs,nys) <- liftM unzip $ randomSubset (zip (U.toList xs) (U.toList ys)) (largeSetSize ep)
-                            largeGroupFitCandidates ep (U.fromList nxs) (U.fromList nys)
+                            (nxs,nys) <- liftM unzip $ randomSubset (zip (G.toList xs) (G.toList ys)) (largeSetSize ep)
+                            largeGroupFitCandidates ep (U.fromList nxs) (G.fromList nys)
 
 -- | Robust fit yielding also the R-square value of the \"clean\" dataset.
-robustFitRSqr :: MonadRandom m => EstimationParameters -> S.Sample -> S.Sample -> m (EstimatedRelation,Double)
+robustFitRSqr :: (MonadRandom m, Vector v Double, Vector v (Double, Double)) => EstimationParameters -> v Double -> v Double -> m (EstimatedRelation,Double)
 robustFitRSqr ep xs ys = do
     er <- robustFit ep xs ys
-    let (good_xs,good_ys) = U.unzip . U.fromList . take (setSize ep xs) . sortBy (compare `on` errorFunction ep er) . U.toList $ U.zip xs ys
+    let (good_xs,good_ys) = U.unzip . G.fromList . take (setSize ep xs) . sortBy (compare `on` errorFunction ep er) . G.toList $ G.zip xs ys
     return (er,correl good_xs good_ys ^ 2)
 
 -- | A wrapper that executes 'robustFit' using a default random generator (meaning it is only pseudo-random)
-nonRandomRobustFit :: EstimationParameters -> S.Sample -> S.Sample -> EstimatedRelation
+nonRandomRobustFit :: Vector v Double => EstimationParameters -> v Double -> v Double -> EstimatedRelation
 nonRandomRobustFit ep xs ys = evalRand (robustFit ep xs ys) (mkStdGen 1)
 
 -- | Given a set of initial estimates converge them all and find the optimal one.
-candidatesToWinner :: EstimationParameters -> S.Sample -> S.Sample -> [EstimatedRelation] -> EstimatedRelation
+candidatesToWinner :: Vector v Double => EstimationParameters -> v Double -> v Double -> [EstimatedRelation] -> EstimatedRelation
 candidatesToWinner ep xs ys = fst . minimumBy (compare `on` snd) . map (findConvergencePoint . concentration ep xs ys)
 
 -- | for a large initial sample - subdivide it, then get candidates from each subgroup. Perform full convergence on all the candidates and return the best ones.
-largeGroupFitCandidates :: MonadRandom m => EstimationParameters -> S.Sample -> S.Sample -> m [EstimatedRelation]
+largeGroupFitCandidates :: (MonadRandom m, Vector v Double) => EstimationParameters -> v Double -> v Double -> m [EstimatedRelation]
 largeGroupFitCandidates ep xs ys = do
-    let n = U.length xs
+    let n = G.length xs
     let sub_groups_num = n `div` (mediumSetSize ep `div` 2)
     let sub_groups_size = n `div` sub_groups_num
-    shuffled <- shuffleM $ zip (U.toList xs) (U.toList ys)
-    let sub_groups = map (U.unzip . U.fromList) $ splitTo sub_groups_size shuffled
+    shuffled <- shuffleM $ zip (G.toList xs) (G.toList ys)
+    let sub_groups = map (G.unzip . U.fromList) $ splitTo sub_groups_size shuffled
     let sub_groups_candidates = maxSubsetsNum ep `div` sub_groups_num
     candidates_list <- mapM (applyTo $ singleGroupFitCandidates ep (Just sub_groups_candidates)) sub_groups
     let candidates = concat candidates_list
     return . map fst . take (groupSubsets ep) . sortBy (compare `on` snd) . map (findConvergencePoint . concentration ep xs ys) $ candidates
 
 -- | For a single group (a group that will not be subdivided) pick an initial set of pairs of points, run a few steps on each, then return the most promising candidates.
-singleGroupFitCandidates :: MonadRandom m => EstimationParameters -> Maybe Int -> S.Sample -> S.Sample -> m [EstimatedRelation]
+singleGroupFitCandidates :: (MonadRandom m, Vector v Double) => EstimationParameters -> Maybe Int -> v Double -> v Double -> m [EstimatedRelation]
 singleGroupFitCandidates ep m_subsets xs ys = do
-    let all_pairs = allPairs $ zip (U.toList xs) (U.toList ys)
+    let all_pairs = allPairs $ zip (G.toList xs) (G.toList ys)
     let return_size = fromMaybe (maxSubsetsNum ep) m_subsets
     initial_sets <- if return_size > length all_pairs
         then return all_pairs
