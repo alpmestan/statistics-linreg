@@ -1,8 +1,10 @@
 Name:                statistics-linreg
-Version:             0.2.4
+Version:             0.3
 Synopsis:            Linear regression between two samples, based on the 'statistics' package.
 Description:         Provides functions to perform a linear regression between 2 samples, see the documentation of the linearRegression functions. This library is based on the 'statistics' package.
 		     .
+           * 0.3: you can now use all functions on any instance of the Vector class (not just unboxed vectors).
+         .
 		       * 0.2.4: added distribution estimations for standard regression parameters.
 		     .
 		       * 0.2.3: added robust-fit support.
@@ -33,7 +35,7 @@ License:             MIT
 License-file:        LICENSE
 Author:              Alp Mestanogullari <alpmestan@gmail.com>, Uri Barenholz <uri.barenholz@weizmann.ac.il>
 Maintainer:          Alp Mestanogullari <alpmestan@gmail.com>
-Copyright:           2010-2013 Alp Mestanogullari
+Copyright:           2010-2014 Alp Mestanogullari
 Stability:           Experimental
 Category:            Math, Statistics
 Build-type:          Simple
